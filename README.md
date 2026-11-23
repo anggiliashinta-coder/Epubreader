@@ -1,2 +1,0 @@
-# Epubreader
-For epub reader
