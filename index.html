@@ -753,8 +753,57 @@
       </div>
 
       <div class="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200/70 text-xs leading-relaxed">
-        <span class="font-semibold text-emerald-900 block">Mesin Terjemahan Web Google (Setara Kiwi/Chrome)</span>
-        <span class="text-[11px] text-emerald-700/90">Menggunakan widget resmi Google Translate Web langsung pada teks buku agar konteks kalimat dan format miring/tebal tetap alami.</span>
+        <span class="font-semibold text-emerald-900 block">Google Translate Web + Pemoles Prosa Novel</span>
+        <span class="text-[11px] text-emerald-700/90">Menerjemahkan seluruh bab secara instan, lalu merapikan frasa literal dan dialog agar lebih luwes dibaca.</span>
+      </div>
+
+      <div class="p-3 rounded-xl bg-blue-50/70 border border-blue-200/70 space-y-2.5">
+        <label class="flex items-start gap-2.5 cursor-pointer">
+          <input type="checkbox" id="translate-gemini-refine" class="mt-0.5 w-4 h-4 accent-blue-600 rounded cursor-pointer">
+          <div class="text-xs leading-relaxed">
+            <span class="font-semibold text-blue-950 block">AI Penyunting Gaya Novel (Google AI Studio • Tanpa Pop-up)</span>
+            <span class="text-[11px] text-blue-800/80">Menyunting ulang hasil Google Translate agar lebih luwes dan setia pada arti sesungguhnya, berjalan di semua browser tanpa pop-up login.</span>
+          </div>
+        </label>
+        <div id="gemini-config-row" class="hidden pl-6 space-y-2">
+          <input type="password" id="translate-gemini-key" autocomplete="off" placeholder="Tempel API Key Gemini gratis (AIza...)" class="w-full px-3 py-1.5 rounded-lg border border-blue-200 bg-white text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500/40">
+          <select id="translate-gemini-model" class="w-full px-3 py-1.5 rounded-lg border border-blue-200 bg-white text-xs font-medium text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/40 cursor-pointer">
+            <option value="auto">Otomatis (Gemini Flash Lite → Flash)</option>
+            <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash Lite (Cepat)</option>
+            <option value="gemini-3.5-flash">Gemini 3.5 Flash (Kualitas Sastra)</option>
+            <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
+          </select>
+          <div class="flex items-center justify-between gap-2">
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-[11px] font-semibold text-blue-700 hover:underline">Buat API Key Gratis</a>
+            <button id="btn-test-gemini-key" type="button" class="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold whitespace-nowrap transition cursor-pointer">
+              Tes Koneksi Key
+            </button>
+          </div>
+          <p id="gemini-key-status" class="text-[11px] text-blue-800/80 hidden"></p>
+        </div>
+      </div>
+
+      <div class="p-3 rounded-xl bg-indigo-50/50 border border-indigo-200/60 space-y-2.5">
+        <label class="flex items-start gap-2.5 cursor-pointer">
+          <input type="checkbox" id="translate-puter-refine" class="mt-0.5 w-4 h-4 accent-indigo-600 rounded cursor-pointer">
+          <div class="text-xs leading-relaxed">
+            <span class="font-semibold text-indigo-950 block">Opsional: AI Penyunting Puter.js (Butuh Pop-up Login)</span>
+            <span class="text-[11px] text-indigo-800/80">Alternatif tanpa API key jika Anda membuka file ini di tab browser penuh yang mengizinkan pop-up.</span>
+          </div>
+        </label>
+        <div id="puter-model-row" class="hidden pl-6 space-y-2">
+          <select id="translate-puter-model" class="w-full px-3 py-1.5 rounded-lg border border-indigo-200 bg-white text-xs font-medium text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500/40 cursor-pointer">
+            <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash Lite (Cepat &amp; Luwes)</option>
+            <option value="gpt-4o-mini">GPT-4o Mini (Halus &amp; Stabil)</option>
+            <option value="gpt-5-nano">GPT-5 Nano (Ringan)</option>
+          </select>
+          <div class="flex items-center justify-between gap-2">
+            <span id="puter-auth-status" class="text-[11px] text-indigo-800/80">Memeriksa status Puter.js...</span>
+            <button id="btn-puter-signin" type="button" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-semibold whitespace-nowrap transition cursor-pointer">
+              Hubungkan Puter
+            </button>
+          </div>
+        </div>
       </div>
 
       <label class="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-100 cursor-pointer">
@@ -4665,6 +4714,11 @@ ${scopeEpubCssToViewer(body)}
       abortController: null,
       targetLang: SafeStorage.getItem('readest_translate_lang') || 'id',
       aiRefine: SafeStorage.getItem('readest_translate_ai_refine') === 'true',
+      geminiRefine: SafeStorage.getItem('readest_translate_gemini_refine') === 'true',
+      geminiApiKey: SafeStorage.getItem('readest_gemini_api_key') || '',
+      geminiModel: SafeStorage.getItem('readest_gemini_model') || 'auto',
+      puterRefine: SafeStorage.getItem('readest_translate_puter_refine') === 'true',
+      puterModel: SafeStorage.getItem('readest_translate_puter_model') || 'gemini-3.5-flash-lite',
       fictionPronouns: SafeStorage.getItem('readest_translate_fiction') !== 'false',
       novelPolish: SafeStorage.getItem('readest_translate_polish_v2') !== 'false',
       glossaryText: SafeStorage.getItem('readest_translate_glossary') || '',
@@ -4774,14 +4828,38 @@ ${scopeEpubCssToViewer(body)}
         [/\bcewek\b/gi, 'wanita'],
         [/\b(asik|asyik|kece|gokil)\b/gi, 'menyenangkan'],
         [/\bmantap\b/gi, 'bagus'],
-        [/\bhubungan\s+(?:asmara|romantis|percintaan|cinta)\b/gi, 'hubungan']
+        [/\bhubungan\s+(?:asmara|romantis|percintaan|cinta)\b/gi, 'hubungan'],
+        [/\bmengambil\s+napas\s+dalam-dalam\b/gi, 'menarik napas dalam-dalam'],
+        [/\bmengambil\s+nafas\s+dalam-dalam\b/gi, 'menarik napas dalam-dalam'],
+        [/\bjatuh\s+tertidur\b/gi, 'tertidur'],
+        [/\bjatuh\s+terdiam\b/gi, 'terdiam'],
+        [/\btidak\s+bisa\s+menahan\s+diri\s+untuk\s+tidak\b/gi, 'tak kuasa menahan diri untuk'],
+        [/\btidak\s+bisa\s+membantu\s+tetapi\b/gi, 'tak kuasa menahan'],
+        [/\bmembuat\s+jalannya\s+(ke|menuju)\b/gi, 'melangkah $1'],
+        [/\bdi\s+akhir\s+hari\b/gi, 'pada akhirnya'],
+        [/\buntuk\s+sesaat\b/gi, 'sejenak'],
+        [/\bselama\s+beberapa\s+saat\b/gi, 'beberapa saat'],
+        [/\bdengan\s+cara\s+apa\s+pun\b/gi, 'sama sekali'],
+        [/\bdalam\s+rangka\s+untuk\b/gi, 'untuk'],
+        [/\bsebagai\s+hasil\s+dari\b/gi, 'akibat'],
+        [/\bseolah-olah\s+seperti\b/gi, 'seolah-olah'],
+        [/\bmemutar\s+matanya\b/gi, 'memutar bola matanya'],
+        [/\bsejauh\s+yang\s+aku\s+tahu\b/gi, 'setahuku'],
+        [/\bsejauh\s+yang\s+saya\s+tahu\b/gi, 'setahuku'],
+        [/\bsebuah\s+(senyuman|tatapan|keputusan|rahasia|suara|desahan|bisikan|pelukan|ciuman|janji|perasaan|ekspresi|anggukan)\b/gi, '$1'],
+        [/\bmelepaskan\s+na[pf]as\b/gi, 'mengembuskan napas'],
+        [/\bkehilangan\s+kesabarannya\b/gi, 'habis kesabarannya'],
+        [/\bdi\s+bawah\s+na[pf]asnya\b/gi, 'dengan suara lirih'],
+        [/\bmengambil\s+keuntungan\s+dari\b/gi, 'memanfaatkan'],
+        [/\bpada\s+saat\s+yang\s+tepat\b/gi, 'tepat pada waktunya'],
+        [/\bmemberitahu\b/gi, 'memberi tahu']
       ];
       literalStandardPairs.forEach(([rx, rep]) => {
         out = out.replace(rx, (m) => matchInitialCase(m, rep));
       });
 
-      // Selalu ubah semua kata ganti saya/anda menjadi aku/kamu (-ku/-mu) sesuai situasi kalimat
-      {
+      // Ubah kata ganti saya/anda menjadi aku/kamu (-ku/-mu) saat opsi Gaya Novel aktif
+      if (typeof TranslationState === 'undefined' || TranslationState.fictionPronouns !== false) {
         const possNouns = 'wajah|mata|hati|tangan|jari|bibir|mulut|pipi|kening|dahi|leher|punggung|dada|perut|kaki|lutut|rambut|kepala|bahu|lengan|telinga|hidung|lidah|kulit|darah|napas|langkah|tubuh|badan|diri|jiwa|pikiran|benak|otak|ingatan|memori|perasaan|emosi|suara|nada|tatapan|senyum|senyuman|tawa|tangis|air mata|nama|gelar|keluarga|orang tua|ayah|ibu|mama|papa|kakak|adik|saudara|anak|suami|istri|pasangan|kekasih|pacar|teman|sahabat|rekan|bos|pelayan|guru|murid|tetangga|musuh|rumah|kamar|apartemen|kantor|sekolah|kampus|mobil|motor|sepeda|tas|buku|ponsel|telepon|uang|harta|barang|baju|pakaian|sepatu|sandal|jaket|mantel|topi|kacamata|jam|cincin|kalung|gelang|dompet|kunci|surat|pesan|foto|gambar|catatan|meja|kursi|pintu|jendela|gelas|piring|kopi|teh|makanan|minuman|hadiah|sisi|hadapan|pangkuan|pelukan|genggaman|senjata|pekerjaan|tugas|masalah|rahasia|rencana|tujuan|harapan|impian|mimpi|hidup|kehidupan|masa depan|masa lalu|waktu|hari|malam|dunia|kisah|cerita|kata|ucapan|pertanyaan|jawaban|keputusan|pilihan|kesalahan|keberanian|kekuatan|kelemahan|milik';
         const prepWords = 'kepada|pada|untuk|buat|bagi|dengan|bersama|tentang|mengenai|dari|oleh|tanpa|seperti|bagaikan|selain|melawan|menuju|dekat|depan|belakang|samping|sebelah|atas|bawah|antara|dalam|luar';
         const objVerbs = 'membuat|melihat|menatap|memandang|memanggil|memberi|memberitahu|mengajak|mengikuti|meninggalkan|membantu|menolong|menunggu|mencari|menemukan|mengenal|mencintai|menyayangi|membenci|memeluk|mencium|menyentuh|memegang|menarik|mendorong|memukul|menampar|menyakiti|melindungi|menyelamatkan|mengerti|memahami|mempercayai|menghormati|mengagumi|menghindari|mengabaikan|melupakan|mengingat|mengira|menganggap|menjadikan|mengizinkan|melarang|memaksa|meminta|menyuruh|menawarkan|menanyai|menjawab|mendengar|mendengarkan|merasakan|mengganggu|mengejutkan|menenangkan|menghibur|memperhatikan|menemani|mengantar|menjemput';
@@ -5442,6 +5520,8 @@ ${scopeEpubCssToViewer(body)}
 
       const translatedEls = viewer.querySelectorAll('[data-translated="true"]');
       translatedEls.forEach((el) => {
+        el.classList.remove('notranslate');
+        el.removeAttribute('translate');
         if (el._origHtml !== undefined) {
           el.innerHTML = el._origHtml;
         }
@@ -5473,22 +5553,375 @@ ${scopeEpubCssToViewer(body)}
       updateTranslationProgressUI();
     }
 
+    async function callGeminiRefineAPI(promptText, apiKey, preferredModel = 'auto', signal = undefined) {
+      const models = preferredModel && preferredModel !== 'auto'
+        ? [preferredModel]
+        : ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-flash'];
+      let lastErr = null;
+
+      for (const m of models) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`;
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': apiKey
+            },
+            signal,
+            body: JSON.stringify({
+              contents: [{ role: 'user', parts: [{ text: promptText }] }],
+              generationConfig: { temperature: 0.35 }
+            })
+          });
+          if (!res.ok) {
+            let errMsg = `HTTP ${res.status}`;
+            try {
+              const errJson = await res.json();
+              if (errJson?.error?.message) errMsg = errJson.error.message;
+            } catch (e) {}
+            lastErr = new Error(errMsg);
+            if (res.status === 400 || res.status === 401 || res.status === 403) {
+              throw lastErr;
+            }
+            continue;
+          }
+          const data = await res.json();
+          const out = data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+          if (out.trim()) return out;
+          lastErr = new Error('Respons Gemini kosong');
+        } catch (err) {
+          if (err && err.name === 'AbortError') throw err;
+          lastErr = err;
+          if (err && /API key|API_KEY|permission|invalid/i.test(err.message || '')) throw err;
+        }
+      }
+      throw lastErr || new Error('Gagal terhubung ke Google AI Studio');
+    }
+
+    async function refineVisibleBlocksWithGeminiAI(runId) {
+      if (!TranslationState.geminiRefine || !TranslationState.isTranslated || !viewer) return false;
+      const apiKey = (TranslationState.geminiApiKey || '').trim();
+      if (!apiKey) {
+        showToast('API Key Google AI Studio belum diisi — memakai pemoles novel lokal.');
+        return false;
+      }
+      const targetLang = TranslationState.targetLang || 'id';
+      const preferredModel = TranslationState.geminiModel || 'auto';
+      const glossaryTerms = parseGlossaryTerms(TranslationState.glossaryText || '');
+
+      for (let w = 0; w < 12; w++) {
+        if (TranslationState.runId !== runId || !TranslationState.isTranslated) return false;
+        if (viewer.querySelector('font') || viewer.querySelector('[data-translated="true"]')) break;
+        await new Promise(r => setTimeout(r, 250));
+      }
+
+      const allBlocks = collectTranslatableBlocks();
+      if (allBlocks.length === 0) return false;
+
+      const cRect = viewerContainer ? viewerContainer.getBoundingClientRect() : { top: 0, bottom: window.innerHeight };
+      const activeBlocks = allBlocks.filter((el) => {
+        const r = el.getBoundingClientRect();
+        return r.bottom >= cRect.top - 300 && r.top <= cRect.bottom + 1600;
+      }).slice(0, 24);
+
+      if (activeBlocks.length === 0) return false;
+
+      const batches = [];
+      for (let i = 0; i < activeBlocks.length; i += 4) {
+        batches.push(activeBlocks.slice(i, i + 4));
+      }
+
+      showToast('Menyunting gaya novel dengan Gemini (AI Studio)...');
+
+      const langNames = {
+        id: 'Bahasa Indonesia', en: 'English', ms: 'Bahasa Melayu',
+        jv: 'Basa Jawa', su: 'Basa Sunda', ja: 'Japanese',
+        ko: 'Korean', 'zh-CN': 'Simplified Chinese', ar: 'Arabic'
+      };
+      const targetName = langNames[targetLang] || targetLang;
+      const pronounRule = (targetLang === 'id' && TranslationState.fictionPronouns)
+        ? 'Pastikan kata ganti orang pertama/kedua menggunakan aku/kamu (-ku/-mu) yang luwes untuk fiksi.'
+        : 'Jaga gaya prosa novel agar mengalir alami dan tetap setia pada makna sesungguhnya.';
+
+      let refinedAny = false;
+      for (let b = 0; b < batches.length; b++) {
+        if (TranslationState.runId !== runId || !TranslationState.isTranslated) return refinedAny;
+        const batch = batches[b];
+        const prepared = batch.map((el) => {
+          const cur = (el.textContent || '').replace(/\s+/g, ' ').trim();
+          return { el, ...protectGlossaryTerms(cur, glossaryTerms) };
+        });
+
+        const numbered = prepared.map((p, idx) => `[[${idx}]] ${p.protectedText}`).join('\n\n');
+        const prompt = `Kamu adalah editor sastra profesional. Sunting ulang teks terjemahan novel berikut dalam ${targetName} agar lebih luwes, enak dibaca, dan tetap setia pada makna sesungguhnya tanpa menambah atau mengurangi arti. ${pronounRule} Pertahankan semua penanda [[N]] dan token seperti XZQ0QZX persis seperti aslinya. Balas HANYA dengan paragraf bernomor yang sudah disunting.\n\n${numbered}`;
+
+        try {
+          const outText = await callGeminiRefineAPI(prompt, apiKey, preferredModel);
+          if (TranslationState.runId !== runId || !TranslationState.isTranslated) return refinedAny;
+
+          const markerRegex = /\[\[(\d+)\]\]\s*([\s\S]*?)(?=\[\[\d+\]\]|$)/g;
+          let m;
+          const mapped = new Array(batch.length).fill('');
+          let hit = 0;
+          while ((m = markerRegex.exec(outText)) !== null) {
+            const idx = parseInt(m[1], 10);
+            if (idx >= 0 && idx < batch.length) {
+              mapped[idx] = m[2].trim();
+              hit++;
+            }
+          }
+
+          if (hit === batch.length) {
+            prepared.forEach((p, idx) => {
+              const refined = restoreGlossaryTerms(mapped[idx], p.tokens);
+              if (refined) {
+                p.el.classList.add('notranslate');
+                p.el.setAttribute('translate', 'no');
+                applyTranslatedTextToBlock(p.el, refined, targetLang);
+                refinedAny = true;
+              }
+            });
+          } else if (batch.length === 1) {
+            const refined = restoreGlossaryTerms(outText.replace(/^\[\[0\]\]\s*/, '').trim(), prepared[0].tokens);
+            if (refined) {
+              prepared[0].el.classList.add('notranslate');
+              prepared[0].el.setAttribute('translate', 'no');
+              applyTranslatedTextToBlock(prepared[0].el, refined, targetLang);
+              refinedAny = true;
+            }
+          }
+        } catch (err) {
+          const msg = err?.message ? String(err.message) : 'API Key tidak valid atau kuota habis';
+          showToast(`Gemini AI Studio: ${msg}. Tetap memakai pemoles lokal.`);
+          return refinedAny;
+        }
+      }
+
+      if (refinedAny) {
+        showToast('Gaya novel selesai disunting dengan Gemini AI Studio.');
+      }
+      return refinedAny;
+    }
+
+    function loadPuterJsScript() {
+      return new Promise((resolve) => {
+        if (window.puter && window.puter.ai && typeof window.puter.ai.chat === 'function') {
+          resolve(true);
+          return;
+        }
+        let sc = document.getElementById('puter-js-sdk');
+        if (!sc) {
+          sc = document.createElement('script');
+          sc.id = 'puter-js-sdk';
+          sc.src = 'https://js.puter.com/v2/';
+          sc.async = true;
+          document.head.appendChild(sc);
+        }
+        let tries = 0;
+        const timer = setInterval(() => {
+          tries += 1;
+          if (window.puter && window.puter.ai && typeof window.puter.ai.chat === 'function') {
+            clearInterval(timer);
+            resolve(true);
+          } else if (tries >= 50) {
+            clearInterval(timer);
+            resolve(false);
+          }
+        }, 100);
+      });
+    }
+
+    async function updatePuterAuthStatusUI() {
+      const statusEl = document.getElementById('puter-auth-status');
+      const btnEl = document.getElementById('btn-puter-signin');
+      if (!statusEl) return;
+      statusEl.innerText = 'Memuat Puter.js...';
+      const ready = await loadPuterJsScript();
+      if (!ready || !window.puter) {
+        statusEl.innerText = 'Gagal memuat Puter.js (periksa koneksi atau buka di tab browser penuh).';
+        if (btnEl) btnEl.classList.add('hidden');
+        return;
+      }
+      try {
+        const signedIn = window.puter.auth && typeof window.puter.auth.isSignedIn === 'function'
+          ? window.puter.auth.isSignedIn()
+          : false;
+        if (signedIn) {
+          let uname = '';
+          try {
+            const u = await window.puter.auth.getUser();
+            uname = u?.username ? ` (${u.username})` : '';
+          } catch (e) {}
+          statusEl.innerText = `Terhubung${uname} — siap menyunting.`;
+          if (btnEl) {
+            btnEl.innerText = 'Terhubung';
+            btnEl.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+            btnEl.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+          }
+        } else {
+          statusEl.innerText = 'Belum terhubung — klik tombol untuk login gratis.';
+          if (btnEl) {
+            btnEl.classList.remove('hidden', 'bg-emerald-600', 'hover:bg-emerald-700');
+            btnEl.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+            btnEl.innerText = 'Hubungkan Puter';
+          }
+        }
+      } catch (e) {
+        statusEl.innerText = 'Klik Hubungkan Puter untuk mulai.';
+      }
+    }
+
+    async function refineVisibleBlocksWithPuterAI(runId) {
+      if (!TranslationState.puterRefine || !TranslationState.isTranslated || !viewer) return;
+      const targetLang = TranslationState.targetLang || 'id';
+      const model = TranslationState.puterModel || 'gemini-3.5-flash-lite';
+      const glossaryTerms = parseGlossaryTerms(TranslationState.glossaryText || '');
+
+      const ready = await loadPuterJsScript();
+      if (!ready || !window.puter?.ai?.chat || TranslationState.runId !== runId || !TranslationState.isTranslated) {
+        if (!ready) showToast('Gagal memuat Puter.js — tetap memakai pemoles novel lokal.');
+        return;
+      }
+
+      for (let w = 0; w < 12; w++) {
+        if (TranslationState.runId !== runId || !TranslationState.isTranslated) return;
+        if (viewer.querySelector('font') || viewer.querySelector('[data-translated="true"]')) break;
+        await new Promise(r => setTimeout(r, 250));
+      }
+
+      const allBlocks = collectTranslatableBlocks();
+      if (allBlocks.length === 0) return;
+
+      const cRect = viewerContainer ? viewerContainer.getBoundingClientRect() : { top: 0, bottom: window.innerHeight };
+      const activeBlocks = allBlocks.filter((el) => {
+        const r = el.getBoundingClientRect();
+        return r.bottom >= cRect.top - 300 && r.top <= cRect.bottom + 1400;
+      }).slice(0, 18);
+
+      if (activeBlocks.length === 0) return;
+
+      const batches = [];
+      for (let i = 0; i < activeBlocks.length; i += 3) {
+        batches.push(activeBlocks.slice(i, i + 3));
+      }
+
+      showToast('Menyunting gaya novel dengan AI Puter.js...');
+
+      const langNames = {
+        id: 'Bahasa Indonesia', en: 'English', ms: 'Bahasa Melayu',
+        jv: 'Basa Jawa', su: 'Basa Sunda', ja: 'Japanese',
+        ko: 'Korean', 'zh-CN': 'Simplified Chinese', ar: 'Arabic'
+      };
+      const targetName = langNames[targetLang] || targetLang;
+      const pronounRule = (targetLang === 'id' && TranslationState.fictionPronouns)
+        ? 'Pastikan kata ganti orang pertama/kedua menggunakan aku/kamu (-ku/-mu) yang luwes untuk fiksi.'
+        : 'Jaga gaya prosa novel agar mengalir alami dan setia pada makna aslinya.';
+
+      for (let b = 0; b < batches.length; b++) {
+        if (TranslationState.runId !== runId || !TranslationState.isTranslated) return;
+        const batch = batches[b];
+        const prepared = batch.map((el) => {
+          const cur = (el.textContent || '').replace(/\s+/g, ' ').trim();
+          return { el, ...protectGlossaryTerms(cur, glossaryTerms) };
+        });
+
+        const numbered = prepared.map((p, idx) => `[[${idx}]] ${p.protectedText}`).join('\n\n');
+        const prompt = `Kamu adalah editor sastra profesional. Sunting ulang teks terjemahan novel berikut dalam ${targetName} agar lebih luwes, enak dibaca, dan tetap setia pada makna sesungguhnya tanpa menambah atau mengurangi arti. ${pronounRule} Pertahankan semua penanda [[N]] dan token seperti XZQ0QZX persis seperti aslinya. Balas HANYA dengan paragraf bernomor yang sudah disunting.\n\n${numbered}`;
+
+        try {
+          const resp = await window.puter.ai.chat(prompt, { model });
+          if (TranslationState.runId !== runId || !TranslationState.isTranslated) return;
+
+          const outText = typeof resp === 'string'
+            ? resp
+            : (resp?.message?.content || resp?.text || (Array.isArray(resp?.message?.content) ? resp.message.content.map(c => c.text || '').join('') : '') || '');
+
+          if (!outText.trim()) continue;
+
+          const markerRegex = /\[\[(\d+)\]\]\s*([\s\S]*?)(?=\[\[\d+\]\]|$)/g;
+          let m;
+          const mapped = new Array(batch.length).fill('');
+          let hit = 0;
+          while ((m = markerRegex.exec(outText)) !== null) {
+            const idx = parseInt(m[1], 10);
+            if (idx >= 0 && idx < batch.length) {
+              mapped[idx] = m[2].trim();
+              hit++;
+            }
+          }
+
+          if (hit === batch.length) {
+            prepared.forEach((p, idx) => {
+              const refined = restoreGlossaryTerms(mapped[idx], p.tokens);
+              if (refined) {
+                p.el.classList.add('notranslate');
+                p.el.setAttribute('translate', 'no');
+                applyTranslatedTextToBlock(p.el, refined, targetLang);
+              }
+            });
+          } else if (batch.length === 1) {
+            const refined = restoreGlossaryTerms(outText.replace(/^\[\[0\]\]\s*/, '').trim(), prepared[0].tokens);
+            if (refined) {
+              prepared[0].el.classList.add('notranslate');
+              prepared[0].el.setAttribute('translate', 'no');
+              applyTranslatedTextToBlock(prepared[0].el, refined, targetLang);
+            }
+          }
+        } catch (err) {
+          const msg = (err && (err.message || err.error)) ? String(err.message || err.error) : 'Pop-up login diblokir atau belum terhubung';
+          const stEl = document.getElementById('puter-auth-status');
+          if (stEl) stEl.innerText = `Puter.js: ${msg}`;
+          showToast(`Puter.js tidak bisa berjalan (${msg}). Tetap memakai Google Translate + pemoles lokal.`);
+          return;
+        }
+      }
+      showToast('Gaya novel selesai disunting dengan AI Puter.js.');
+    }
+
     async function startBookTranslation() {
       if (!AppState.currentBookData || !viewer) return;
       const targetLang = document.getElementById('translate-target-lang')?.value || 'id';
       const fictionPronouns = Boolean(document.getElementById('translate-fiction-pronouns')?.checked);
       const novelPolish = Boolean(document.getElementById('translate-novel-polish')?.checked);
+      const geminiRefine = Boolean(document.getElementById('translate-gemini-refine')?.checked);
+      const geminiApiKey = (document.getElementById('translate-gemini-key')?.value || '').trim();
+      const geminiModel = document.getElementById('translate-gemini-model')?.value || 'auto';
+      const puterRefine = Boolean(document.getElementById('translate-puter-refine')?.checked);
+      const puterModel = document.getElementById('translate-puter-model')?.value || 'gemini-3.5-flash-lite';
       const glossaryRaw = document.getElementById('translate-glossary')?.value || '';
       const glossaryTerms = parseGlossaryTerms(glossaryRaw);
 
       TranslationState.targetLang = targetLang;
       TranslationState.fictionPronouns = fictionPronouns;
       TranslationState.novelPolish = novelPolish;
+      TranslationState.geminiRefine = geminiRefine;
+      TranslationState.geminiApiKey = geminiApiKey;
+      TranslationState.geminiModel = geminiModel;
+      TranslationState.puterRefine = puterRefine;
+      TranslationState.puterModel = puterModel;
       TranslationState.glossaryText = glossaryRaw;
       SafeStorage.setItem('readest_translate_lang', targetLang);
       SafeStorage.setItem('readest_translate_fiction', String(fictionPronouns));
       SafeStorage.setItem('readest_translate_polish_v2', String(novelPolish));
+      SafeStorage.setItem('readest_translate_gemini_refine', String(geminiRefine));
+      SafeStorage.setItem('readest_gemini_api_key', geminiApiKey);
+      SafeStorage.setItem('readest_gemini_model', geminiModel);
+      SafeStorage.setItem('readest_translate_puter_refine', String(puterRefine));
+      SafeStorage.setItem('readest_translate_puter_model', puterModel);
       SafeStorage.setItem('readest_translate_glossary', glossaryRaw);
+
+      if (puterRefine) {
+        const puterReady = await loadPuterJsScript();
+        if (puterReady && window.puter?.auth && typeof window.puter.auth.isSignedIn === 'function' && !window.puter.auth.isSignedIn()) {
+          try {
+            await window.puter.auth.signIn();
+            updatePuterAuthStatusUI();
+          } catch (err) {
+            showToast('Login Puter belum selesai — melanjutkan dengan Google Translate + pemoles lokal.');
+          }
+        }
+      }
 
       stopBookTranslation(false);
       TranslationState.isTranslated = true;
@@ -5650,6 +6083,15 @@ ${scopeEpubCssToViewer(body)}
               updateScrollMetrics();
             }, 350);
           }
+          if (TranslationState.geminiRefine && TranslationState.geminiApiKey) {
+            setTimeout(() => {
+              refineVisibleBlocksWithGeminiAI(widgetRunId);
+            }, 1100);
+          } else if (TranslationState.puterRefine) {
+            setTimeout(() => {
+              refineVisibleBlocksWithPuterAI(widgetRunId);
+            }, 1200);
+          }
           return;
         }
       }
@@ -5789,7 +6231,10 @@ ${scopeEpubCssToViewer(body)}
           const statusEl = document.getElementById('translate-status-text');
           if (statusEl) statusEl.innerText = errMsg;
           showToast(errMsg);
-        } else {
+        } else if (TranslationState.geminiRefine && TranslationState.geminiApiKey && successCount > 0) {
+          refineVisibleBlocksWithGeminiAI(runId);
+        } else if (TranslationState.puterRefine && successCount > 0) {
+          refineVisibleBlocksWithPuterAI(runId);
         }
       }
     }
@@ -5799,10 +6244,25 @@ ${scopeEpubCssToViewer(body)}
       const langSelect = document.getElementById('translate-target-lang');
       const fictionChk = document.getElementById('translate-fiction-pronouns');
       const polishChk = document.getElementById('translate-novel-polish');
+      const geminiChk = document.getElementById('translate-gemini-refine');
+      const geminiKeyEl = document.getElementById('translate-gemini-key');
+      const geminiModelSel = document.getElementById('translate-gemini-model');
+      const geminiConfigRow = document.getElementById('gemini-config-row');
+      const puterChk = document.getElementById('translate-puter-refine');
+      const puterModelSel = document.getElementById('translate-puter-model');
+      const puterModelRow = document.getElementById('puter-model-row');
       const glossaryInput = document.getElementById('translate-glossary');
       if (langSelect) langSelect.value = TranslationState.targetLang;
       if (fictionChk) fictionChk.checked = TranslationState.fictionPronouns;
       if (polishChk) polishChk.checked = TranslationState.novelPolish;
+      if (geminiChk) geminiChk.checked = TranslationState.geminiRefine;
+      if (geminiKeyEl) geminiKeyEl.value = TranslationState.geminiApiKey || '';
+      if (geminiModelSel) geminiModelSel.value = TranslationState.geminiModel || 'auto';
+      if (geminiConfigRow) geminiConfigRow.classList.toggle('hidden', !TranslationState.geminiRefine);
+      if (puterChk) puterChk.checked = TranslationState.puterRefine;
+      if (puterModelSel) puterModelSel.value = TranslationState.puterModel || 'gemini-3.5-flash-lite';
+      if (puterModelRow) puterModelRow.classList.toggle('hidden', !TranslationState.puterRefine);
+      if (TranslationState.puterRefine) updatePuterAuthStatusUI();
       if (glossaryInput) glossaryInput.value = TranslationState.glossaryText;
       updateTranslationProgressUI();
       document.getElementById('translate-modal')?.classList.remove('hidden');
@@ -5948,6 +6408,79 @@ ${scopeEpubCssToViewer(body)}
     document.getElementById('translate-backdrop')?.addEventListener('click', (e) => {
       e.stopPropagation();
       document.getElementById('translate-modal')?.classList.add('hidden');
+    });
+    document.getElementById('translate-gemini-refine')?.addEventListener('change', (e) => {
+      const checked = Boolean(e.target.checked);
+      TranslationState.geminiRefine = checked;
+      SafeStorage.setItem('readest_translate_gemini_refine', String(checked));
+      document.getElementById('gemini-config-row')?.classList.toggle('hidden', !checked);
+    });
+    document.getElementById('translate-gemini-key')?.addEventListener('input', (e) => {
+      TranslationState.geminiApiKey = (e.target.value || '').trim();
+      SafeStorage.setItem('readest_gemini_api_key', TranslationState.geminiApiKey);
+    });
+    document.getElementById('translate-gemini-model')?.addEventListener('change', (e) => {
+      TranslationState.geminiModel = e.target.value || 'auto';
+      SafeStorage.setItem('readest_gemini_model', TranslationState.geminiModel);
+    });
+    document.getElementById('btn-test-gemini-key')?.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const key = (document.getElementById('translate-gemini-key')?.value || '').trim();
+      const model = document.getElementById('translate-gemini-model')?.value || 'auto';
+      const stEl = document.getElementById('gemini-key-status');
+      if (!key) {
+        if (stEl) {
+          stEl.classList.remove('hidden');
+          stEl.className = 'text-[11px] text-rose-600 font-medium';
+          stEl.innerText = 'Masukkan API Key Google AI Studio terlebih dahulu.';
+        }
+        return;
+      }
+      TranslationState.geminiApiKey = key;
+      SafeStorage.setItem('readest_gemini_api_key', key);
+      if (stEl) {
+        stEl.classList.remove('hidden');
+        stEl.className = 'text-[11px] text-blue-700 font-medium';
+        stEl.innerText = 'Menguji koneksi ke Gemini...';
+      }
+      try {
+        const reply = await callGeminiRefineAPI('Balas dengan satu kata: OK', key, model);
+        if (stEl) {
+          stEl.className = 'text-[11px] text-emerald-700 font-semibold';
+          stEl.innerText = `Terhubung! (${reply.trim().slice(0, 20)}) — siap menyunting novel tanpa pop-up.`;
+        }
+      } catch (err) {
+        if (stEl) {
+          stEl.className = 'text-[11px] text-rose-600 font-medium';
+          stEl.innerText = `Gagal: ${err?.message || 'API Key tidak valid'}`;
+        }
+      }
+    });
+    document.getElementById('translate-puter-refine')?.addEventListener('change', (e) => {
+      const checked = Boolean(e.target.checked);
+      TranslationState.puterRefine = checked;
+      SafeStorage.setItem('readest_translate_puter_refine', String(checked));
+      document.getElementById('puter-model-row')?.classList.toggle('hidden', !checked);
+      if (checked) updatePuterAuthStatusUI();
+    });
+    document.getElementById('translate-puter-model')?.addEventListener('change', (e) => {
+      TranslationState.puterModel = e.target.value || 'gemini-3.5-flash-lite';
+      SafeStorage.setItem('readest_translate_puter_model', TranslationState.puterModel);
+    });
+    document.getElementById('btn-puter-signin')?.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const ready = await loadPuterJsScript();
+      if (!ready || !window.puter?.auth?.signIn) {
+        showToast('Puter.js gagal dimuat. Coba buka aplikasi di tab browser penuh.');
+        return;
+      }
+      try {
+        await window.puter.auth.signIn();
+        await updatePuterAuthStatusUI();
+        showToast('Akun Puter berhasil terhubung!');
+      } catch (err) {
+        showToast('Login Puter dibatalkan atau pop-up diblokir oleh browser.');
+      }
     });
     document.getElementById('translate-glossary')?.addEventListener('input', (e) => {
       TranslationState.glossaryText = e.target.value || '';
