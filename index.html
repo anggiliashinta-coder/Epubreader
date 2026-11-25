@@ -753,8 +753,8 @@
       </div>
 
       <div class="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200/70 text-xs leading-relaxed">
-        <span class="font-semibold text-emerald-900 block">Google Translate Web + Pemoles Prosa Novel</span>
-        <span class="text-[11px] text-emerald-700/90">Menerjemahkan seluruh bab secara instan, lalu merapikan frasa literal dan dialog agar lebih luwes dibaca.</span>
+        <span class="font-semibold text-emerald-900 block">Google Translate Web (Apa Adanya)</span>
+        <span class="text-[11px] text-emerald-700/90">Menerjemahkan seluruh bab secara instan tanpa mengubah huruf maupun tanda baca asli buku (kecuali opsi pemolesan di bawah dicentang).</span>
       </div>
 
       <div class="p-3 rounded-xl bg-blue-50/70 border border-blue-200/70 space-y-2.5">
@@ -3295,11 +3295,14 @@
         if (isBeforeChapterOne || isExplicitFrontMatter) {
           sec.setAttribute('data-front-matter', 'true');
         }
-        // Tandai hanya elemen heading/header/figure asli sebagai header
-        sec.querySelectorAll('h1, h2, h3, h4, h5, h6, header, figure').forEach((el) => {
+        const markHeaderEl = (el) => {
+          if (!el) return;
           el.setAttribute('data-epub-header', 'true');
           el.querySelectorAll('*').forEach((d) => d.setAttribute('data-epub-header', 'true'));
-        });
+        };
+
+        // Tandai elemen heading/header/figure asli sebagai header
+        sec.querySelectorAll('h1, h2, h3, h4, h5, h6, header, figure').forEach(markHeaderEl);
 
         // Tandai paragraf kosong/spasi (&nbsp;) agar tidak membuat jarak kosong berlebih
         sec.querySelectorAll('p').forEach((p) => {
@@ -3309,6 +3312,56 @@
             p.setAttribute('data-empty-spacer', 'true');
           }
         });
+
+        // Tandai judul bab, subjudul bab, & pembatas/ornamen yang memakai <p> atau <div> (umum pada EPUB Calibre/OceanofPDF)
+        const headerClassRx = /\b(chapter|chap|title|heading|head|subhead|subtitle|ct|cn|ch|ornament|divider|asterism|scene[-_]?break)\b/i;
+        const chapterTitleTextRx = /^(chapter|bab|prolog|prologue|epilog|epilogue|part|bagian|act|book|buku|interlude|prelude|afterword)\b/i;
+        const romanOrNumRx = /^([ivxlcdm]+|\d{1,3})$/i;
+
+        sec.querySelectorAll('p, div').forEach((el) => {
+          if (el.getAttribute('data-empty-spacer') === 'true') return;
+          if (el.tagName === 'DIV' && el.querySelector('p, div')) return;
+          const cls = ((el.getAttribute('class') || '') + ' ' + (el.getAttribute('id') || '')).trim();
+          const hasMedia = Boolean(el.querySelector('img, svg, image'));
+          const txt = (el.textContent || '').replace(/[\s\u00a0]+/g, ' ').trim();
+          if (hasMedia && txt.length <= 40) {
+            markHeaderEl(el);
+            return;
+          }
+          if (cls && headerClassRx.test(cls) && txt.length <= 120) {
+            markHeaderEl(el);
+          }
+        });
+
+        // Periksa beberapa blok non-kosong pertama di awal bab (sebelum paragraf cerita pertama)
+        const topBlocks = Array.from(sec.querySelectorAll('h1, h2, h3, h4, h5, h6, p, div')).filter((el) => {
+          if (el.getAttribute('data-empty-spacer') === 'true') return false;
+          if (el.tagName === 'DIV' && el.querySelector('p, div, h1, h2, h3, h4, h5, h6')) return false;
+          const txt = (el.textContent || '').replace(/[\s\u00a0]+/g, ' ').trim();
+          return txt.length > 0 || Boolean(el.querySelector('img, svg, image'));
+        });
+
+        for (let b = 0; b < Math.min(5, topBlocks.length); b++) {
+          const el = topBlocks[b];
+          const txt = (el.textContent || '').replace(/[\s\u00a0]+/g, ' ').trim();
+          const hasMedia = Boolean(el.querySelector('img, svg, image'));
+          if (hasMedia && txt.length <= 40) {
+            markHeaderEl(el);
+            continue;
+          }
+          const isShortTitle = txt.length > 0 && txt.length <= 65 && !/[.!?]$/.test(txt);
+          const isAllCapsHeading = txt.length > 0 && txt.length <= 50 && txt === txt.toUpperCase() && /[A-Z]/.test(txt);
+          if (
+            chapterTitleTextRx.test(txt) ||
+            romanOrNumRx.test(txt) ||
+            isAllCapsHeading ||
+            (b > 0 && topBlocks[b - 1].getAttribute('data-epub-header') === 'true' && isShortTitle && txt.length <= 40)
+          ) {
+            markHeaderEl(el);
+          } else if (txt.length > 65 || /[.!?]$/.test(txt)) {
+            break;
+          }
+        }
 
         // Tandai subjudul bab pendek tepat di bawah h1/h2/h3 (mis. nama POV seperti "Lara")
         sec.querySelectorAll('h1, h2, h3').forEach((h) => {
@@ -3322,8 +3375,7 @@
               continue;
             }
             if (sib.tagName === 'P' && txt.length <= 35 && !/[.,!?;:]$/.test(txt)) {
-              sib.setAttribute('data-epub-header', 'true');
-              sib.querySelectorAll('*').forEach((d) => d.setAttribute('data-epub-header', 'true'));
+              markHeaderEl(sib);
             }
             break;
           }
@@ -4333,7 +4385,7 @@ ${scopeEpubCssToViewer(body)}
             }` : ''}
 
             /* Terapkan tipografi & tata letak menyeluruh pada semua paragraf isi dari Bab 1 hingga akhir */
-            #viewer.book-content section:not([data-front-matter="true"]) p${headerExclusion},
+            #viewer.book-content section:not([data-front-matter="true"]) p${headerExclusion}:not(:has(img)):not(:has(svg)):not(:has(image)),
             #viewer.book-content section:not([data-front-matter="true"]) li${headerExclusion},
             #viewer.book-content section:not([data-front-matter="true"]) blockquote${headerExclusion} {
               text-align: ${pAlign} !important;
@@ -4387,7 +4439,7 @@ ${scopeEpubCssToViewer(body)}
               -webkit-hyphens: ${pHyphens} !important;
             }
 
-            /* Pertahankan keaslian font, ukuran, berat, spasi, dan perataan bawaan EPUB untuk header & judul bab */
+            /* Pertahankan keaslian font, ukuran, berat, spasi, dan perataan bawaan EPUB untuk header, judul bab, & pembatas bab */
             .book-content [data-epub-header="true"],
             .book-content [data-epub-header="true"] *,
             .book-content h1, .book-content h2, .book-content h3,
@@ -4719,8 +4771,8 @@ ${scopeEpubCssToViewer(body)}
       geminiModel: SafeStorage.getItem('readest_gemini_model') || 'auto',
       puterRefine: SafeStorage.getItem('readest_translate_puter_refine') === 'true',
       puterModel: SafeStorage.getItem('readest_translate_puter_model') || 'gemini-3.5-flash-lite',
-      fictionPronouns: SafeStorage.getItem('readest_translate_fiction') !== 'false',
-      novelPolish: SafeStorage.getItem('readest_translate_polish_v2') !== 'false',
+      fictionPronouns: SafeStorage.getItem('readest_translate_fiction_v3') === 'true',
+      novelPolish: SafeStorage.getItem('readest_translate_polish_v3') === 'true',
       glossaryText: SafeStorage.getItem('readest_translate_glossary') || '',
       cache: new Map(),
       translatedCount: 0,
@@ -5268,7 +5320,7 @@ ${scopeEpubCssToViewer(body)}
         const raw = txtNode.nodeValue;
         if (!raw || raw.trim().length < 2) return;
         let updated = raw;
-        if (targetLang === 'id') {
+        if (targetLang === 'id' && TranslationState.fictionPronouns) {
           const parentBlock = txtNode.parentElement ? txtNode.parentElement.closest('p, h1, h2, h3, h4, h5, h6, li, blockquote, div') : null;
           const parentSec = txtNode.parentElement ? txtNode.parentElement.closest('section') : null;
           const origContext = (parentBlock && parentBlock._origBlockText)
@@ -5450,7 +5502,7 @@ ${scopeEpubCssToViewer(body)}
         el._origText = (el.textContent || '').replace(/\s+/g, ' ').trim();
       }
       let processed = String(translatedHtmlOrText || '').trim();
-      if (targetLang === 'id') {
+      if (targetLang === 'id' && TranslationState.fictionPronouns) {
         processed = applyLiteralIndonesianRules(processed, el._origText || '');
         processed = naturalizeIndonesianNovelProse(processed);
       }
@@ -5902,8 +5954,8 @@ ${scopeEpubCssToViewer(body)}
       TranslationState.puterModel = puterModel;
       TranslationState.glossaryText = glossaryRaw;
       SafeStorage.setItem('readest_translate_lang', targetLang);
-      SafeStorage.setItem('readest_translate_fiction', String(fictionPronouns));
-      SafeStorage.setItem('readest_translate_polish_v2', String(novelPolish));
+      SafeStorage.setItem('readest_translate_fiction_v3', String(fictionPronouns));
+      SafeStorage.setItem('readest_translate_polish_v3', String(novelPolish));
       SafeStorage.setItem('readest_translate_gemini_refine', String(geminiRefine));
       SafeStorage.setItem('readest_gemini_api_key', geminiApiKey);
       SafeStorage.setItem('readest_gemini_model', geminiModel);
